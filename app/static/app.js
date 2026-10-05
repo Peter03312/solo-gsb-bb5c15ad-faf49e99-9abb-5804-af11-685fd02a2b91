@@ -860,10 +860,23 @@ async function loadMergeVersions() {
   for (const v of data.versions) {
     const opt = document.createElement("option");
     opt.value = v.version;
-    opt.textContent = `v${v.version}` + (v.reviewable ? "" : "（缺快照不可并入）");
+    const isCurrent = v.version === data.current_version;
+    opt.textContent = `v${v.version}` +
+      (isCurrent ? "（当前）" : "") +
+      (v.reviewable ? "" : "（缺快照不可并入）");
     if (!v.reviewable) opt.disabled = true;
     vsel.appendChild(opt);
   }
+  // 默认选中来源复盘的当前版本（避免直接读旧快照、误并入过时事件）；
+  // 当前版本缺少可回看快照时，回退到最新的可回看版本（列表按版本号倒序）。
+  const reviewableVersions = data.versions.filter((v) => v.reviewable)
+    .map((v) => v.version);
+  const fallback = reviewableVersions[0];
+  const defaultVersion = reviewableVersions.includes(data.current_version)
+    ? data.current_version : fallback;
+  if (defaultVersion) vsel.value = String(defaultVersion);
+  // 没有任何可并入版本时，加载按钮禁用（缺快照版本始终不可选）
+  $("#btn-merge-load").disabled = !defaultVersion;
 }
 
 /* 加载来源版本的不可变输入，渲染事件勾选表；关系仅用于提示“两端均选”会带哪些。 */
