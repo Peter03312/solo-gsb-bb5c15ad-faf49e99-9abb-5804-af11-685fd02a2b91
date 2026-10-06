@@ -853,6 +853,7 @@ async function loadMergeReviews(preselectId) {
 
 async function loadMergeVersions() {
   const vsel = $("#merge-version");
+  const loadBtn = $("#btn-merge-load");
   vsel.innerHTML = "";
   const sid = parseInt($("#merge-review").value, 10);
   if (!sid) return;
@@ -864,6 +865,15 @@ async function loadMergeVersions() {
     if (!v.reviewable) opt.disabled = true;
     vsel.appendChild(opt);
   }
+
+  // 默认并入来源复盘的当前版本；旧库当前版本缺快照时，退到最新可回看版本，
+  // 缺快照选项仍保持禁用。用户也可以改选其他可回看版本。
+  const reviewable = data.versions.filter((v) => v.reviewable).map((v) => v.version);
+  const preferred = reviewable.includes(data.current_version)
+    ? data.current_version
+    : reviewable.reduce((latest, v) => (latest === null || v > latest ? v : latest), null);
+  vsel.value = preferred === null ? "" : String(preferred);
+  loadBtn.disabled = preferred === null;
 }
 
 /* 加载来源版本的不可变输入，渲染事件勾选表；关系仅用于提示“两端均选”会带哪些。 */
